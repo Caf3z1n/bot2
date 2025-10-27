@@ -1,5 +1,22 @@
 import { Model, DataTypes } from 'sequelize';
 
+function formatDateTimeBr(value) {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    dateStyle: 'short',
+    timeStyle: 'medium',
+  }).format(date);
+}
+
 export default class Asset extends Model {
   static Status = {
     AWAITING_CROSS: 'awaiting_cross',
@@ -86,6 +103,24 @@ export default class Asset extends Model {
         leverage: {
           field: 'leverage',
           type: DataTypes.INTEGER,
+        },
+        candleCrossTimeBr: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            return formatDateTimeBr(this.getDataValue('candleCrossTime'));
+          },
+        },
+        createdAtBr: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            return formatDateTimeBr(this.getDataValue('createdAt'));
+          },
+        },
+        updatedAtBr: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            return formatDateTimeBr(this.getDataValue('updatedAt'));
+          },
         },
       },
       {

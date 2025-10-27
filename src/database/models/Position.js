@@ -1,4 +1,43 @@
+/* eslint-disable no-nested-ternary */
 import { Model, DataTypes } from 'sequelize';
+
+function formatDateTimeBr(value) {
+  if (!value) {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    dateStyle: 'short',
+    timeStyle: 'medium',
+  }).format(date);
+}
+
+function toNumber(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function resolveResult(pnl) {
+  if (!Number.isFinite(pnl)) {
+    return null;
+  }
+  if (pnl > 0) {
+    return 'profit';
+  }
+  if (pnl < 0) {
+    return 'loss';
+  }
+  return null;
+}
 
 export default class Position extends Model {
   static Status = {
@@ -76,6 +115,64 @@ export default class Position extends Model {
         },
         pnl: {
           type: DataTypes.DECIMAL(20, 8),
+        },
+        candleCrossTimeBr: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            return formatDateTimeBr(this.getDataValue('candleCrossTime'));
+          },
+        },
+        exitTimeBr: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            return formatDateTimeBr(this.getDataValue('exitTime'));
+          },
+        },
+        createdAtBr: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            return formatDateTimeBr(this.getDataValue('createdAt'));
+          },
+        },
+        updatedAtBr: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            return formatDateTimeBr(this.getDataValue('updatedAt'));
+          },
+        },
+        result: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            const pnl = toNumber(this.getDataValue('pnl'));
+            return resolveResult(pnl);
+          },
+        },
+        slippage: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            const pnl = toNumber(this.getDataValue('pnl'));
+            const exitPrice = toNumber(this.getDataValue('exitPrice'));
+            const tpPrice = toNumber(this.getDataValue('tpPrice'));
+            const slPrice = toNumber(this.getDataValue('slPrice'));
+
+            const resultType = resolveResult(pnl);
+            const expectedPrice =
+              resultType === 'profit'
+                ? tpPrice
+                : resultType === 'loss'
+                  ? slPrice
+                  : null;
+
+            if (
+              !Number.isFinite(exitPrice) ||
+              !Number.isFinite(expectedPrice)
+            ) {
+              return null;
+            }
+
+            const diff = exitPrice - expectedPrice;
+            return Number(diff.toFixed(8));
+          },
         },
       },
       {

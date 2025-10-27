@@ -39,7 +39,6 @@ const strategy = {
   minimumCandles: asInteger(process.env.BOT2_MIN_CANDLES),
   pullback: {
     penetrationPct: asFloat(process.env.BOT2_PULLBACK_PENETRATION),
-    timeoutCandles: asInteger(process.env.BOT2_PULLBACK_TIMEOUT),
   },
   risk: {
     perTradePct: asFloat(process.env.BOT2_RISK_PCT),
@@ -62,10 +61,6 @@ if (strategy.emaFastPeriod <= 0 || strategy.emaSlowPeriod <= 0) {
 
 if (strategy.emaFastPeriod >= strategy.emaSlowPeriod) {
   problems.push('EMA fast period must be lower than EMA slow period.');
-}
-
-if (strategy.pullback.timeoutCandles <= 0) {
-  problems.push('Pullback timeout must be greater than zero.');
 }
 
 if (strategy.risk.perTradePct <= 0 || strategy.risk.perTradePct > 100) {
