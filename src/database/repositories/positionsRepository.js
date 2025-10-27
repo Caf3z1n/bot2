@@ -86,8 +86,12 @@ export async function updatePosition(id, changes = {}) {
     ...(changes.side !== undefined ? { side: changes.side } : {}),
     ...(changes.status !== undefined ? { status: changes.status } : {}),
     ...(changes.orderId !== undefined ? { orderId: changes.orderId } : {}),
-    ...(changes.tpOrderId !== undefined ? { tpOrderId: changes.tpOrderId } : {}),
-    ...(changes.slOrderId !== undefined ? { slOrderId: changes.slOrderId } : {}),
+    ...(changes.tpOrderId !== undefined
+      ? { tpOrderId: changes.tpOrderId }
+      : {}),
+    ...(changes.slOrderId !== undefined
+      ? { slOrderId: changes.slOrderId }
+      : {}),
     ...(changes.candleCrossTime !== undefined
       ? { candleCrossTime: changes.candleCrossTime }
       : {}),
@@ -106,16 +110,12 @@ export async function updatePosition(id, changes = {}) {
     ...(changes.notional !== undefined
       ? { notional: sanitizeDecimal(changes.notional) }
       : {}),
-    ...(changes.qty !== undefined
-      ? { qty: sanitizeDecimal(changes.qty) }
-      : {}),
+    ...(changes.qty !== undefined ? { qty: sanitizeDecimal(changes.qty) } : {}),
     ...(changes.exitTime !== undefined ? { exitTime: changes.exitTime } : {}),
     ...(changes.exitPrice !== undefined
       ? { exitPrice: sanitizeDecimal(changes.exitPrice) }
       : {}),
-    ...(changes.pnl !== undefined
-      ? { pnl: sanitizeDecimal(changes.pnl) }
-      : {}),
+    ...(changes.pnl !== undefined ? { pnl: sanitizeDecimal(changes.pnl) } : {}),
   };
 
   if (Object.keys(payload).length === 0) {
