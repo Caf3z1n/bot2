@@ -13,42 +13,29 @@ const INTERVAL_MS = 10_000;
 const HOUR_MS = 3_600_000;
 
 async function runHourlyCycle() {
-  logger.info('[Live] ----------------------------------------');
-  logger.info('[Live] Executando rotina horaria');
+  logger.info('[Live] Executando nova rotina horaria');
   await syncAssetMetadata({ logger }); // Atualiza metadados dos ativos (step_size, tick_size, leverage etc.)
-  logger.info('[Live] Rotina horaria concluida');
-  logger.info('[Live] ----------------------------------------');
-  logger.info('');
 }
 
 async function executeTask() {
   try {
-    logger.info('[Live] ----------------------------------------');
-    logger.info('[Live] Iniciando novo ciclo de atualizacao');
+    logger.debug('[Live] Iniciando novo ciclo de atualizacao');
 
     const updatedSymbols = await syncAssetIndicators({ logger }); // Recalcula indicadores tecnicos e retorna simbolos com alteracao
     if (updatedSymbols.length > 0) {
-      logger.info('[AssetService] Iniciando processamento de sinais...');
-      const { crossesProcessed, triggersProcessed } = await processAssetSignals(
-        { logger }
-      ); // Aplica regras de cruzamento/trigger price para gerar sinais utilizaveis
       logger.info(
-        { crossesProcessed, triggersProcessed },
-        '[Live] Processamento de sinais finalizado'
+        `[Live] ${updatedSymbols.length} Candles atualizados; processando sinais...`
       );
+      await processAssetSignals({ logger }); // Aplica regras de cruzamento/trigger price para gerar sinais utilizaveis
 
       await openOrdersForTriggerAssets({ logger }); // Abre ordens para os ativos com trigger price mas sem orderId
     } else {
-      logger.warn('[Live] Nenhuma atualizacao; pulando cruzamentos e filtros');
+      logger.debug('[Live] Nenhuma atualizacao; pulando cruzamentos e filtros');
     }
 
     await checkBinanceOrders({ logger }); // Verifica ordens pendentes e registra positions quando a Binance marcar FILLED
     await ensureTpSlOrdersForPositions({ logger }); // Garante TP/SL reduce-only closePosition para positions abertas sem protecao
     await settleClosedPositions({ logger }); // Consolida fills de TP/SL, atualiza pnl/fees e cancela ordem oposta
-
-    logger.info('[Live] Ciclo finalizado; aguardando proximo intervalo de 10s');
-    logger.info('[Live] ----------------------------------------');
-    logger.info('');
   } catch (error) {
     logger.error({ err: error }, '[Live] Falha ao executar ciclo');
   }

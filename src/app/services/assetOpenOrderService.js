@@ -262,7 +262,7 @@ export async function openOrdersForTriggerAssets(options = {}) {
       }
 
       if (Number.isFinite(minQty) && minQty > 0 && quantity < minQty) {
-        log.warn(
+        log.error(
           { symbol: asset.symbol, quantity, minQty },
           '[OpenOrder] Quantidade ajustada menor que minQty; pulando'
         );
@@ -281,7 +281,7 @@ export async function openOrdersForTriggerAssets(options = {}) {
       }
 
       if (requiredMargin > availableBalance) {
-        log.warn(
+        log.error(
           {
             symbol: asset.symbol,
             requiredMargin,

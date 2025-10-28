@@ -6,7 +6,7 @@ import {
   updateAssetState,
   updateAssetTriggerPrice,
 } from '../../database/repositories/assetRepository.js';
-import { cancelAllOpenOrders } from '../../utils/binanceClient.js';
+import { cancelAllOpenOrders, fetchOrder } from '../../utils/binanceClient.js';
 import strategy from '../../config/strategy.js';
 
 const STATUS_AWAITING_CROSS = Asset.Status.AWAITING_CROSS;
@@ -90,6 +90,54 @@ function snapPrice(rawPrice, tickSize, side) {
   return Math.floor(rawPrice / step + Number.EPSILON) * step;
 }
 
+function buildOrderLookupParams(asset) {
+  if (!asset?.orderId) {
+    return null;
+  }
+
+  const numericOrderId = Number(asset.orderId);
+  if (Number.isFinite(numericOrderId)) {
+    return {
+      symbol: asset.symbol,
+      orderId: numericOrderId,
+    };
+  }
+
+  return {
+    symbol: asset.symbol,
+    origClientOrderId: String(asset.orderId),
+  };
+}
+
+async function fetchExistingOrder(asset, log) {
+  const params = buildOrderLookupParams(asset);
+  if (!params) {
+    return null;
+  }
+
+  try {
+    return await fetchOrder(params);
+  } catch (error) {
+    log.warn(
+      { symbol: asset.symbol, orderId: asset.orderId, err: error },
+      '[AssetService] Falha ao consultar status da ordem atual'
+    );
+    return null;
+  }
+}
+
+function orderShouldBePreserved(order) {
+  if (!order?.status) {
+    return false;
+  }
+
+  if (order.status === 'PARTIALLY_FILLED' || order.status === 'FILLED') {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Processa o fluxo completo de deteccao de cruzamentos e ajuste do trigger price.
  * @param {{ logger?: import('pino').Logger }} [options]
@@ -98,7 +146,7 @@ export async function processAssetSignals(options = {}) {
   const baseLogger = options.logger ?? loggerFactory;
   const log = createLogger(baseLogger, 'asset-service');
 
-  log.info('[AssetService] Iniciando processamento de sinais de ativos');
+  log.debug('[AssetService] Iniciando processamento de sinais de ativos');
 
   const assetsByStatus = await Promise.all(
     STATUSES_TO_EVALUATE.map((status) => listAssetsByStatus(status))
@@ -174,6 +222,24 @@ export async function processAssetSignals(options = {}) {
     }
 
     let ordersCancelled = false;
+
+    if (asset.orderId) {
+      const existingOrder = await fetchExistingOrder(asset, log);
+      if (orderShouldBePreserved(existingOrder)) {
+        log.warn(
+          {
+            symbol: asset.symbol,
+            orderId: asset.orderId,
+            status: existingOrder?.status,
+            executedQty: existingOrder?.executedQty,
+          },
+          '[AssetService] Ordem em andamento detectada; aguardando conclusao'
+        );
+        // Mantemos a ordem atual ate que seja finalizada pelo fluxo de entrada.
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+    }
 
     if (triggerChanged) {
       const cancelled = await cancelExistingOrders(asset.symbol, log);
@@ -264,7 +330,7 @@ export async function processAssetSignals(options = {}) {
     statusTransitions += 1;
   }
 
-  log.info(
+  log.debug(
     {
       transicoesDeStatus: statusTransitions,
       triggersAtualizados: triggersUpdated,
