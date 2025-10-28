@@ -3,6 +3,7 @@ import { listPositions } from '../../database/repositories/positionsRepository.j
 class PositionController {
   static async index(req, res) {
     const positions = await listPositions();
+
     return res.json({ positions });
   }
 }
