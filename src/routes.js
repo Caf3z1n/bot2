@@ -8,11 +8,13 @@ import AssetDebugController from './app/controllers/AssetDebugController.js';
 import InfoController from './app/controllers/InfoController.js';
 import BinanceOrderController from './app/controllers/BinanceOrderController.js';
 import PositionDebugController from './app/controllers/PositionDebugController.js';
+import ResetController from './app/controllers/ResetController.js';
 
 const routes = Router();
 
 routes.get('/assets', AssetController.index);
 routes.get('/positions', PositionController.index);
+routes.delete('/reset', ResetController.destroy);
 
 if (appConfig.enableDebugRoutes) {
   routes.get('/debug/candles', CandleController.index);
