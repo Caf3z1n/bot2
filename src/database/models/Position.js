@@ -154,6 +154,7 @@ export default class Position extends Model {
             const exitPrice = toNumber(this.getDataValue('exitPrice'));
             const tpPrice = toNumber(this.getDataValue('tpPrice'));
             const slPrice = toNumber(this.getDataValue('slPrice'));
+            const qty = toNumber(this.getDataValue('qty'));
 
             const resultType = resolveResult(pnl);
             const expectedPrice =
@@ -165,13 +166,19 @@ export default class Position extends Model {
 
             if (
               !Number.isFinite(exitPrice) ||
-              !Number.isFinite(expectedPrice)
+              !Number.isFinite(expectedPrice) ||
+              !Number.isFinite(qty) ||
+              qty <= 0
             ) {
               return null;
             }
 
-            const diff = exitPrice - expectedPrice;
-            return Number(diff.toFixed(8));
+            const priceDiff = exitPrice - expectedPrice;
+            const nominal = priceDiff * qty;
+            const isLong = this.getDataValue('side') === Position.Side.LONG;
+            const adjusted = isLong ? nominal : nominal * -1;
+
+            return Number(adjusted.toFixed(8));
           },
         },
       },
