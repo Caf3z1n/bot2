@@ -123,7 +123,7 @@ export async function syncAssetIndicators(options = {}) {
     updatedSymbols.push(asset.symbol);
   }
 
-  log.info(
+  log.debug(
     { atualizados: updatedSymbols.length },
     '[IndicatorSync] Sincronizacao concluida'
   );
