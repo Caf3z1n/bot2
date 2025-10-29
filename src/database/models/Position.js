@@ -181,6 +181,66 @@ export default class Position extends Model {
             return Number(adjusted.toFixed(8));
           },
         },
+        riskReward: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            const entryPrice = toNumber(this.getDataValue('price'));
+            const rawTpPrice = toNumber(this.getDataValue('tpPrice'));
+            const rawSlPrice = toNumber(this.getDataValue('slPrice'));
+            const exitPrice = toNumber(this.getDataValue('exitPrice'));
+            const side = this.getDataValue('side');
+
+            if (
+              !Number.isFinite(entryPrice) ||
+              !Number.isFinite(rawTpPrice) ||
+              !Number.isFinite(rawSlPrice) ||
+              (side !== Position.Side.LONG && side !== Position.Side.SHORT)
+            ) {
+              return null;
+            }
+
+            let tpPrice = rawTpPrice;
+            let slPrice = rawSlPrice;
+
+            if (Number.isFinite(exitPrice)) {
+              const diffToTp = Math.abs(exitPrice - rawTpPrice);
+              const diffToSl = Math.abs(exitPrice - rawSlPrice);
+
+              if (diffToTp <= diffToSl) {
+                tpPrice = exitPrice;
+              } else {
+                slPrice = exitPrice;
+              }
+            }
+
+            let reward;
+            let risk;
+
+            if (side === Position.Side.LONG) {
+              reward = tpPrice - entryPrice;
+              risk = entryPrice - slPrice;
+            } else {
+              reward = entryPrice - tpPrice;
+              risk = slPrice - entryPrice;
+            }
+
+            if (!Number.isFinite(reward) || !Number.isFinite(risk)) {
+              return null;
+            }
+
+            if (risk <= 0) {
+              return null;
+            }
+
+            const ratio = reward / risk;
+            if (!Number.isFinite(ratio)) {
+              return null;
+            }
+
+            const signed = ratio >= 1 ? ratio : ratio * -1;
+            return Number(signed.toFixed(8));
+          },
+        },
       },
       {
         sequelize,
