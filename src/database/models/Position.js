@@ -188,13 +188,11 @@ export default class Position extends Model {
             const rawTpPrice = toNumber(this.getDataValue('tpPrice'));
             const rawSlPrice = toNumber(this.getDataValue('slPrice'));
             const exitPrice = toNumber(this.getDataValue('exitPrice'));
-            const side = this.getDataValue('side');
 
             if (
               !Number.isFinite(entryPrice) ||
               !Number.isFinite(rawTpPrice) ||
-              !Number.isFinite(rawSlPrice) ||
-              (side !== Position.Side.LONG && side !== Position.Side.SHORT)
+              !Number.isFinite(rawSlPrice)
             ) {
               return null;
             }
@@ -213,22 +211,15 @@ export default class Position extends Model {
               }
             }
 
-            let reward;
-            let risk;
+            const reward = Math.abs(tpPrice - entryPrice);
+            const risk = Math.abs(entryPrice - slPrice);
 
-            if (side === Position.Side.LONG) {
-              reward = tpPrice - entryPrice;
-              risk = entryPrice - slPrice;
-            } else {
-              reward = entryPrice - tpPrice;
-              risk = slPrice - entryPrice;
-            }
-
-            if (!Number.isFinite(reward) || !Number.isFinite(risk)) {
-              return null;
-            }
-
-            if (risk <= 0) {
+            if (
+              !Number.isFinite(reward) ||
+              !Number.isFinite(risk) ||
+              reward <= 0 ||
+              risk <= 0
+            ) {
               return null;
             }
 
@@ -237,8 +228,7 @@ export default class Position extends Model {
               return null;
             }
 
-            const signed = ratio >= 1 ? ratio : ratio * -1;
-            return Number(signed.toFixed(8));
+            return Number(ratio.toFixed(8));
           },
         },
       },
