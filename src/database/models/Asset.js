@@ -151,19 +151,19 @@ export default class Asset extends Model {
             const slowDecreasing = slow1 < slow2;
 
             if (fastAboveSlow && fastIncreasing && slowIncreasing) {
-              return 'continuacao da alta';
+              return 'Continuação da Alta';
             }
 
             if (fastBelowSlow && fastDecreasing && slowDecreasing) {
-              return 'continuacao da baixa';
+              return 'Continuação da Baixa';
             }
 
             if (fastAboveSlow && fastDecreasing) {
-              return 'cruzando short';
+              return 'Cruzando Short';
             }
 
             if (fastBelowSlow && fastIncreasing) {
-              return 'cruzando long';
+              return 'Cruzando Long';
             }
 
             return null;
