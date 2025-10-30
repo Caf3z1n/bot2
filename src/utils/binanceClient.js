@@ -1,4 +1,4 @@
-import binanceFactory from 'binance-api-node';
+﻿import binanceFactory from 'binance-api-node';
 
 import strategy from '../config/strategy.js';
 
@@ -46,12 +46,12 @@ function clamp(value, min, max) {
 }
 
 export function getClient() {
-  // Retorna a instância configurada do cliente da Binance (útil para chamadas diretas).
+  // Retorna a instÃ¢ncia configurada do cliente da Binance (Ãºtil para chamadas diretas).
   return client;
 }
 
 export async function syncTime() {
-  // Ajusta o offset local com base no horário do servidor para evitar erros de timestamp.
+  // Ajusta o offset local com base no horÃ¡rio do servidor para evitar erros de timestamp.
   const serverTime = await client.time();
   const offset = serverTime - Date.now();
   client.timeOffset = offset;
@@ -63,7 +63,7 @@ export async function fetchRecentKlines(
   interval = DEFAULT_INTERVAL,
   options = {}
 ) {
-  // Busca candles recentes do par informado respeitando intervalo e limite definidos na estratégia.
+  // Busca candles recentes do par informado respeitando intervalo e limite definidos na estratÃ©gia.
   const limit = clamp(options?.limit ?? DEFAULT_LIMIT, 1, 1500);
   const payload = withRecvWindow({
     symbol: normalizeSymbol(symbol),
@@ -74,7 +74,7 @@ export async function fetchRecentKlines(
 }
 
 export async function fetchMarkPrice(symbol) {
-  // Recupera o mark price atual de um símbolo futuro.
+  // Recupera o mark price atual de um sÃ­mbolo futuro.
   const payload = withRecvWindow({ symbol: normalizeSymbol(symbol) });
   return client.futuresMarkPrice(payload);
 }
@@ -85,17 +85,17 @@ export async function fetchAccountBalance() {
 }
 
 export async function fetchPositions(params = {}) {
-  // Obtém o risco/posição atual para todos os símbolos configurados.
+  // ObtÃ©m o risco/posiÃ§Ã£o atual para todos os sÃ­mbolos configurados.
   return client.futuresPositionRisk(withRecvWindow(params));
 }
 
 export async function fetchPositionMode() {
-  // Verifica se a conta está em modo hedge ou single via Binance Futures.
+  // Verifica se a conta estÃ¡ em modo hedge ou single via Binance Futures.
   return client.futuresPositionMode(withRecvWindow());
 }
 
 export async function placeOrder(params) {
-  // Envia uma ordem de futuros (market/limit/stop) para o símbolo informado.
+  // Envia uma ordem de futuros (market/limit/stop) para o sÃ­mbolo informado.
   const { symbol, ...rest } = params || {};
   if (!symbol) {
     throw new Error('placeOrder requires a symbol');
@@ -108,7 +108,7 @@ export async function placeOrder(params) {
 }
 
 export async function cancelOrder(params) {
-  // Cancela uma ordem aberta de futuros identificada por símbolo e dados extras.
+  // Cancela uma ordem aberta de futuros identificada por sÃ­mbolo e dados extras.
   const { symbol, ...rest } = params || {};
   if (!symbol) {
     throw new Error('cancelOrder requires a symbol');
@@ -121,7 +121,7 @@ export async function cancelOrder(params) {
 }
 
 export async function cancelAllOpenOrders(params) {
-  // Cancela todas as ordens abertas (não executadas) de um símbolo futuro.
+  // Cancela todas as ordens abertas (nÃ£o executadas) de um sÃ­mbolo futuro.
   const { symbol } = params || {};
   if (!symbol) {
     throw new Error('cancelAllOpenOrders requires a symbol');
@@ -133,7 +133,7 @@ export async function cancelAllOpenOrders(params) {
 }
 
 export async function fetchOrder(params) {
-  // Recupera detalhes de uma ordem específica no mercado de futuros.
+  // Recupera detalhes de uma ordem especÃ­fica no mercado de futuros.
   const { symbol, ...rest } = params || {};
   if (!symbol) {
     throw new Error('fetchOrder requires a symbol');
@@ -146,7 +146,7 @@ export async function fetchOrder(params) {
 }
 
 export async function fetchUserTrades(params = {}) {
-  // Lista execuções (fills) do usuário, opcionalmente filtrando por símbolo e tempo.
+  // Lista execuÃ§Ãµes (fills) do usuÃ¡rio, opcionalmente filtrando por sÃ­mbolo e tempo.
   const { symbol, ...rest } = params;
   const payload = withRecvWindow({
     ...rest,
@@ -155,8 +155,17 @@ export async function fetchUserTrades(params = {}) {
   return client.futuresUserTrades(payload);
 }
 
+export async function fetchOpenOrders(params = {}) {
+  const { symbol, ...rest } = params || {};
+  const payload = withRecvWindow({
+    ...rest,
+    ...(symbol ? { symbol: normalizeSymbol(symbol) } : {}),
+  });
+  return client.futuresOpenOrders(payload);
+}
+
 export async function setLeverage(params) {
-  // Ajusta a alavancagem desejada para um símbolo de futuros.
+  // Ajusta a alavancagem desejada para um sÃ­mbolo de futuros.
   const { symbol, leverage } = params || {};
   if (!symbol) {
     throw new Error('setLeverage requires a symbol');
@@ -185,6 +194,7 @@ const binanceClient = {
   fetchPositions,
   fetchPositionMode,
   fetchUserTrades,
+  fetchOpenOrders,
   placeOrder,
   cancelOrder,
   cancelAllOpenOrders,
@@ -195,3 +205,4 @@ const binanceClient = {
 };
 
 export default binanceClient;
+

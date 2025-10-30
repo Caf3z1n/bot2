@@ -14,6 +14,7 @@ const routes = Router();
 
 routes.get('/assets', AssetController.index);
 routes.put('/assets', AssetController.update);
+routes.get('/binance/open-orders', BinanceOrderController.listOpen);
 routes.get('/positions', PositionController.index);
 routes.delete('/reset', ResetController.destroy);
 

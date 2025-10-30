@@ -1,7 +1,39 @@
-import { cancelAllOpenOrders, fetchOrder } from '../../utils/binanceClient.js';
+import {
+  cancelAllOpenOrders,
+  fetchOrder,
+  fetchOpenOrders,
+} from '../../utils/binanceClient.js';
 import { findAssetByOrderId } from '../../database/repositories/assetRepository.js';
 
 class BinanceOrderController {
+  static async listOpen(req, res) {
+    const rawSymbol =
+      typeof req.query.symbol === 'string' ? req.query.symbol : '';
+    const symbol = rawSymbol.trim().toUpperCase();
+
+    try {
+      const payload = await fetchOpenOrders(symbol ? { symbol } : {});
+      const orders = Array.isArray(payload)
+        ? payload.filter(
+            (order) =>
+              String(order?.status ?? '')
+                .trim()
+                .toUpperCase() === 'NEW'
+          )
+        : [];
+
+      return res.json({
+        ...(symbol ? { symbol } : {}),
+        orders,
+      });
+    } catch (error) {
+      return res.status(500).json({
+        error: 'Failed to fetch open orders on Binance',
+        details: error.message,
+      });
+    }
+  }
+
   static async cancelOpen(req, res) {
     const symbol = req.query.symbol?.trim().toUpperCase() ?? null;
 
