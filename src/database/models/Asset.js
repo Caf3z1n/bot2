@@ -17,6 +17,15 @@ function formatDateTimeBr(value) {
   }).format(date);
 }
 
+function toNumber(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 export default class Asset extends Model {
   static Status = {
     AWAITING_CROSS: 'awaiting_cross',
@@ -120,6 +129,62 @@ export default class Asset extends Model {
           type: DataTypes.VIRTUAL,
           get() {
             return formatDateTimeBr(this.getDataValue('updatedAt'));
+          },
+        },
+        emaTrendStatus: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            const fast1 = toNumber(this.getDataValue('emaFast1'));
+            const fast2 = toNumber(this.getDataValue('emaFast2'));
+            const slow1 = toNumber(this.getDataValue('emaSlow1'));
+            const slow2 = toNumber(this.getDataValue('emaSlow2'));
+
+            if ([fast1, fast2, slow1, slow2].includes(null)) {
+              return null;
+            }
+
+            const fastAboveSlow = fast1 > slow1 && fast2 > slow2;
+            const fastBelowSlow = fast1 < slow1 && fast2 < slow2;
+            const fastIncreasing = fast1 > fast2;
+            const fastDecreasing = fast1 < fast2;
+            const slowIncreasing = slow1 > slow2;
+            const slowDecreasing = slow1 < slow2;
+
+            if (fastAboveSlow && fastIncreasing && slowIncreasing) {
+              return 'continuacao da alta';
+            }
+
+            if (fastBelowSlow && fastDecreasing && slowDecreasing) {
+              return 'continuacao da baixa';
+            }
+
+            if (fastAboveSlow && fastDecreasing) {
+              return 'cruzando short';
+            }
+
+            if (fastBelowSlow && fastIncreasing) {
+              return 'cruzando long';
+            }
+
+            return null;
+          },
+        },
+        emaDiffPercent: {
+          type: DataTypes.VIRTUAL,
+          get() {
+            const fast = toNumber(this.getDataValue('emaFast1'));
+            const slow = toNumber(this.getDataValue('emaSlow1'));
+
+            if (fast === null || slow === null) {
+              return null;
+            }
+
+            const denominator = Math.abs(slow);
+            if (denominator === 0) {
+              return null;
+            }
+
+            return ((fast - slow) / denominator) * 100;
           },
         },
       },
