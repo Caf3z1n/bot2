@@ -1,6 +1,40 @@
 import Asset from '../models/Asset.js';
 import { initDatabase } from '../index.js';
 
+function sanitizeDecimal(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function sanitizeDate(value) {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+const NUMERIC_FIELDS = new Set([
+  'emaFast2',
+  'emaFast1',
+  'emaSlow2',
+  'emaSlow1',
+  'unixCurrentCandle',
+  'stepSize',
+  'tickSize',
+  'minQty',
+  'triggerPrice',
+  'maxNotional',
+  'leverage',
+]);
+
+const STRING_FIELDS = new Set(['status', 'side', 'orderId']);
+
 /**
  * @typedef {Object} AssetRecord
  * @property {number} id
@@ -32,6 +66,24 @@ export async function listAssets() {
   await initDatabase();
   const assets = await Asset.findAll();
   return assets.map((asset) => asset.get({ plain: true }));
+}
+
+/**
+ * Busca um asset pelo symbol.
+ * @param {string} symbol
+ * @returns {Promise<AssetRecord|null>}
+ */
+export async function findAssetBySymbol(symbol) {
+  if (!symbol) {
+    throw new Error('findAssetBySymbol requires a symbol');
+  }
+
+  await initDatabase();
+  const asset = await Asset.findOne({
+    where: { symbol },
+  });
+
+  return asset ? asset.get({ plain: true }) : null;
 }
 
 /**
@@ -203,6 +255,49 @@ export async function updateAssetState(symbol, data = {}) {
  */
 export async function updateAssetOrderId(symbol, orderId) {
   await updateAssetState(symbol, { orderId });
+}
+
+/**
+ * Atualiza campos de um asset a partir do symbol.
+ * @param {string} symbol
+ * @param {Record<string, unknown>} changes
+ * @returns {Promise<AssetRecord|null>}
+ */
+export async function updateAssetBySymbol(symbol, changes = {}) {
+  if (!symbol) {
+    throw new Error('updateAssetBySymbol requires a symbol');
+  }
+
+  if (!changes || typeof changes !== 'object') {
+    throw new Error('updateAssetBySymbol requires a changes object');
+  }
+
+  await initDatabase();
+
+  const payload = {};
+  for (const [key, value] of Object.entries(changes)) {
+    if (NUMERIC_FIELDS.has(key)) {
+      payload[key] = sanitizeDecimal(value);
+      continue;
+    }
+
+    if (key === 'candleCrossTime') {
+      payload[key] = sanitizeDate(value);
+      continue;
+    }
+
+    if (STRING_FIELDS.has(key)) {
+      payload[key] = value ?? null;
+      continue;
+    }
+  }
+
+  if (Object.keys(payload).length === 0) {
+    return findAssetBySymbol(symbol);
+  }
+
+  await Asset.update(payload, { where: { symbol } });
+  return findAssetBySymbol(symbol);
 }
 
 /**
