@@ -34,11 +34,15 @@ function buildOrderLookupParams(symbol, rawOrderId) {
   if (!rawOrderId) {
     return null;
   }
-  const numericId = Number(rawOrderId);
-  if (Number.isFinite(numericId)) {
+  const normalizedId = String(rawOrderId).trim();
+  if (!normalizedId) {
+    return null;
+  }
+  const numericId = Number(normalizedId);
+  if (Number.isSafeInteger(numericId)) {
     return { symbol, orderId: numericId };
   }
-  return { symbol, origClientOrderId: String(rawOrderId) };
+  return { symbol, orderId: normalizedId };
 }
 
 async function fetchOrderStatus(position, orderId, log) {
@@ -67,7 +71,7 @@ async function fetchTradesForOrder(symbol, order) {
   const numericId = Number(canonicalId);
   let trades = [];
 
-  if (Number.isFinite(numericId)) {
+  if (Number.isSafeInteger(numericId)) {
     trades = await fetchUserTrades({ symbol, orderId: numericId });
   } else {
     trades = await fetchUserTrades({ symbol });

@@ -20,8 +20,13 @@ function toNumber(value) {
 }
 
 function resolveOrderFetchParams(asset) {
-  const numericOrderId = Number(asset.orderId);
-  if (Number.isFinite(numericOrderId)) {
+  const normalizedOrderId = String(asset.orderId ?? '').trim();
+  if (!normalizedOrderId) {
+    return null;
+  }
+
+  const numericOrderId = Number(normalizedOrderId);
+  if (Number.isSafeInteger(numericOrderId)) {
     return {
       symbol: asset.symbol,
       orderId: numericOrderId,
@@ -30,7 +35,7 @@ function resolveOrderFetchParams(asset) {
 
   return {
     symbol: asset.symbol,
-    origClientOrderId: asset.orderId,
+    orderId: normalizedOrderId,
   };
 }
 
@@ -87,6 +92,14 @@ export async function checkBinanceOrders(options = {}) {
 
     try {
       const orderParams = resolveOrderFetchParams(asset);
+      if (!orderParams) {
+        log.warn(
+          { symbol: asset.symbol, orderId: asset.orderId },
+          '[CheckOrder] Ordem sem identificador valido; ignorando'
+        );
+        // eslint-disable-next-line no-continue
+        continue;
+      }
       const order = await fetchOrder(orderParams);
 
       if (!order || order.status !== 'FILLED') {
@@ -108,11 +121,10 @@ export async function checkBinanceOrders(options = {}) {
 
       try {
         const numericOrderId = Number(canonicalOrderId);
+        const includeOrderId = Number.isSafeInteger(numericOrderId);
         const tradeParams = {
           symbol: asset.symbol,
-          ...(Number.isFinite(numericOrderId)
-            ? { orderId: numericOrderId }
-            : {}),
+          ...(includeOrderId ? { orderId: numericOrderId } : {}),
         };
         const trades = await fetchUserTrades(tradeParams);
         if (Array.isArray(trades) && trades.length > 0) {

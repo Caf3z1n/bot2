@@ -95,8 +95,12 @@ function buildOrderLookupParams(asset) {
     return null;
   }
 
-  const numericOrderId = Number(asset.orderId);
-  if (Number.isFinite(numericOrderId)) {
+  const normalizedOrderId = String(asset.orderId).trim();
+  if (!normalizedOrderId) {
+    return null;
+  }
+  const numericOrderId = Number(normalizedOrderId);
+  if (Number.isSafeInteger(numericOrderId)) {
     return {
       symbol: asset.symbol,
       orderId: numericOrderId,
@@ -105,7 +109,7 @@ function buildOrderLookupParams(asset) {
 
   return {
     symbol: asset.symbol,
-    origClientOrderId: String(asset.orderId),
+    orderId: normalizedOrderId,
   };
 }
 

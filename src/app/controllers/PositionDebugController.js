@@ -58,12 +58,17 @@ function resolveMatchedOrderId(position, matchType) {
 }
 
 function buildOrderFetchParams(symbol, rawOrderId) {
-  const numeric = Number(rawOrderId);
-  if (Number.isFinite(numeric)) {
+  const normalized = String(rawOrderId ?? '').trim();
+  if (!normalized) {
+    return null;
+  }
+
+  const numeric = Number(normalized);
+  if (Number.isSafeInteger(numeric)) {
     return { symbol, orderId: numeric };
   }
 
-  return { symbol, origClientOrderId: String(rawOrderId) };
+  return { symbol, orderId: normalized };
 }
 
 class PositionDebugController {
@@ -84,10 +89,14 @@ class PositionDebugController {
         });
       }
 
-      const trades = await fetchUserTrades({
+      const numericOrderId = Number(position.orderId);
+      const tradeParams = {
         symbol: position.symbol,
-        orderId: position.orderId,
-      });
+        ...(Number.isSafeInteger(numericOrderId)
+          ? { orderId: numericOrderId }
+          : {}),
+      };
+      const trades = await fetchUserTrades(tradeParams);
       const relevantTrades = Array.isArray(trades)
         ? trades.filter(
             (trade) => String(trade.orderId ?? '') === String(orderId)
@@ -134,6 +143,11 @@ class PositionDebugController {
 
       const effectiveOrderId = resolveMatchedOrderId(position, matchType);
       const params = buildOrderFetchParams(position.symbol, effectiveOrderId);
+      if (!params) {
+        return res.status(400).json({
+          error: 'Identificador da ordem associado à position está vazio.',
+        });
+      }
       const payload = await fetchOrder(params);
 
       return res.json({
