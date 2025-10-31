@@ -19,16 +19,31 @@ class AssetController {
 
     const assetsWithPrice = await Promise.all(
       assets.map(async (asset) => {
+        const triggerPrice = toNumber(asset?.triggerPrice);
+
         try {
           if (!asset?.symbol) {
-            return { ...asset, currentPrice: null };
+            return {
+              ...asset,
+              currentPrice: null,
+              triggerDiffPercent: null,
+            };
           }
 
           const pricePayload = await fetchMarkPrice(asset.symbol);
           const currentPrice = toNumber(pricePayload?.markPrice);
-          return { ...asset, currentPrice };
+          const triggerDiffPercent =
+            currentPrice != null && triggerPrice != null && triggerPrice !== 0
+              ? Math.abs(((currentPrice - triggerPrice) / triggerPrice) * 100)
+              : null;
+
+          return { ...asset, currentPrice, triggerDiffPercent };
         } catch (error) {
-          return { ...asset, currentPrice: null };
+          return {
+            ...asset,
+            currentPrice: null,
+            triggerDiffPercent: null,
+          };
         }
       })
     );

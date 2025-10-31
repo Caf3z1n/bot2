@@ -5,6 +5,7 @@ import { syncAssetIndicators } from './src/app/services/assetIndicatorSyncServic
 import { processAssetSignals } from './src/app/services/assetService.js';
 import { syncAssetMetadata } from './src/app/services/assetMetadataService.js';
 import { openOrdersForTriggerAssets } from './src/app/services/assetOpenOrderService.js';
+import { recoverPullbackAssets } from './src/app/services/pullbackRecoveryService.js';
 import { checkBinanceOrders } from './src/app/services/checkBinanceOrderService.js';
 import { ensureTpSlOrdersForPositions } from './src/app/services/positionExitOrderService.js';
 import { settleClosedPositions } from './src/app/services/positionExitSettlementService.js';
@@ -32,6 +33,8 @@ async function executeTask() {
     } else {
       logger.debug('[Live] Nenhuma atualizacao; pulando cruzamentos e filtros');
     }
+
+    await recoverPullbackAssets({ logger }); // Reconcilia ativos awaiting_pullback sem trigger/orderId
 
     await checkBinanceOrders({ logger }); // Verifica ordens pendentes e registra positions quando a Binance marcar FILLED
     await ensureTpSlOrdersForPositions({ logger }); // Garante TP/SL reduce-only closePosition para positions abertas sem protecao
