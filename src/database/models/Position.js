@@ -1,5 +1,5 @@
 /* eslint-disable no-nested-ternary */
-import { Model, DataTypes } from 'sequelize';
+import { Model, DataTypes, Sequelize } from 'sequelize';
 
 function formatDateTimeBr(value) {
   if (!value) {
@@ -239,7 +239,29 @@ export default class Position extends Model {
         underscored: true,
         timestamps: true,
         defaultScope: {
-          order: [['id', 'DESC']],
+          order: [
+            // 1) nulos primeiro
+            [Sequelize.literal('(exit_time IS NULL)'), 'DESC'],
+
+            // 2) quando nulo, ordena por created_at DESC
+            [
+              Sequelize.literal(
+                'CASE WHEN exit_time IS NULL THEN created_at END'
+              ),
+              'DESC',
+            ],
+
+            // 3) quando NÃO nulo, ordena por exit_time DESC
+            [
+              Sequelize.literal(
+                'CASE WHEN exit_time IS NOT NULL THEN exit_time END'
+              ),
+              'DESC',
+            ],
+
+            // desempate estável opcional
+            ['id', 'DESC'],
+          ],
         },
       }
     );

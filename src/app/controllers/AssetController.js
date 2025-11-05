@@ -1,3 +1,4 @@
+/* eslint-disable no-continue */
 import {
   listAssets,
   updateAssetBySymbol,
@@ -24,7 +25,9 @@ class AssetController {
     const assets = await listAssets();
     const inPositionSymbols = assets
       .filter((asset) => asset?.status === STATUS_IN_POSITION)
-      .map((asset) => (typeof asset?.symbol === 'string' ? asset.symbol.trim() : ''))
+      .map((asset) =>
+        typeof asset?.symbol === 'string' ? asset.symbol.trim() : ''
+      )
       .filter((symbol) => symbol.length > 0);
 
     const normalizedInPositionSymbols = new Set(
